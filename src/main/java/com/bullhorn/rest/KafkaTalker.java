@@ -11,6 +11,8 @@ import java.util.concurrent.ExecutionException;
 
 import javax.ws.rs.core.MediaType;
 
+import com.bullhorn.kafka.data.Topic;
+import com.bullhorn.kafka.data.TopicData;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.hateoas.Link;
@@ -29,8 +31,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.bullhorn.data.QData;
-import com.bullhorn.data.Topic;
 import com.bullhorn.service.Admin;
 import com.bullhorn.service.Consumer;
 import com.bullhorn.service.Producer;
@@ -123,9 +123,9 @@ public class KafkaTalker extends ResourceSupport {
 		return new ResponseEntity<>(outLst, HttpStatus.OK);
 	}
 
-	@RequestMapping(value = "/{topic}/publish", method = RequestMethod.POST, consumes = "application/json")
+	@RequestMapping(value = "/{topic}/produce", method = RequestMethod.POST, consumes = "application/json")
 	@ResponseBody
-	public String publish(@PathVariable String topic, @RequestBody JsonNode data) {
+	public String produce(@PathVariable String topic, @RequestBody JsonNode data) {
 		try {
 			return producer.sendData(topic,data);
 		} catch (Exception e) {
@@ -135,11 +135,11 @@ public class KafkaTalker extends ResourceSupport {
 
 	@RequestMapping(value = "/{topic}/consume", method = RequestMethod.GET)
 	@ResponseBody
-	public List<QData> consume(@PathVariable String topic) throws IOException {
+	public List<TopicData> consume(@PathVariable String topic) throws IOException {
 		try {
 			return consumer.recieveData(topic);
 		} catch (Exception e) {
-			return Collections.singletonList(new QData("Error", new ObjectMapper().readTree(e.getMessage())));
+			return Collections.singletonList(new TopicData("Error", new ObjectMapper().readTree(e.getMessage())));
 		}
 	}
 

@@ -8,6 +8,7 @@ import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import com.bullhorn.kafka.data.TopicData;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -22,7 +23,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.bullhorn.config.BaseConfig;
-import com.bullhorn.data.QData;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Qualifier;
 
@@ -30,7 +30,7 @@ public class Consumer implements Runnable {
 	private static final Logger LOGGER = LoggerFactory.getLogger(Consumer.class);
 
 	public volatile boolean closing = false;
-	public volatile List<QData> consumedData = new ArrayList<QData>();
+	public volatile List<TopicData> consumedData = new ArrayList<TopicData>();
 	public final String SEP = "|";
 
 	private final KafkaConsumer<Long, String> consumer;
@@ -53,12 +53,12 @@ public class Consumer implements Runnable {
 		this.consumer = new KafkaConsumer<>(props);
 	}
 	
-	public synchronized List<QData> recieveData(String topicName) {
+	public synchronized List<TopicData> recieveData(String topicName) {
 		LOGGER.info("Getting data from the list");
-		List<QData> dat = consumedData.stream().filter(p -> p.getTopicName().equals((topicName)))
+		List<TopicData> dat = consumedData.stream().filter(p -> p.getTopic().equals((topicName)))
 				.collect(Collectors.toList());
 
-		consumedData.removeIf((o) -> o.getTopicName().equals(topicName));
+		consumedData.removeIf((o) -> o.getTopic().equals(topicName));
 		return dat;
 	}
 
@@ -89,7 +89,7 @@ public class Consumer implements Runnable {
 					for (ConsumerRecord<Long, String> record : records) {
 						LOGGER.info("topic = {} offset = {}, key = {}, value ={}\n", record.topic(),record.offset(), record.key(), record.value());
 						//lst.add(record.value());
-						consumedData.add(new QData(record.topic(), new ObjectMapper().readTree(record.value())));
+						consumedData.add(new TopicData(record.topic(), new ObjectMapper().readTree(record.value())));
 					}
 					
 					for (TopicPartition tp : consumer.assignment())

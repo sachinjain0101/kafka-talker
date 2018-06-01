@@ -6,6 +6,7 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
+import com.bullhorn.kafka.data.Topic;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.admin.KafkaAdminClient;
@@ -16,7 +17,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.bullhorn.config.BaseConfig;
-import com.bullhorn.data.Topic;
 import org.springframework.beans.factory.annotation.Qualifier;
 
 public class Admin{

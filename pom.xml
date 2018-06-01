@@ -6,7 +6,7 @@
 
 	<groupId>com.bullhorn</groupId>
 	<artifactId>kafka-talker</artifactId>
-	<version>0.1</version>
+	<version>0.1.0</version>
 	<packaging>war</packaging>
 
 	<name>kafka-talker</name>
@@ -27,6 +27,13 @@
 	</properties>
 
 	<dependencies>
+
+		<dependency>
+			<groupId>com.bullhorn</groupId>
+			<artifactId>te-exchange</artifactId>
+			<version>0.1.0</version>
+		</dependency>
+
 		<dependency>
 			<groupId>javax</groupId>
 			<artifactId>javaee-api</artifactId>
