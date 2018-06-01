@@ -1,6 +1,5 @@
 package com.bullhorn.service;
 
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
@@ -18,53 +17,52 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import com.bullhorn.config.BaseConfig;
 import com.bullhorn.data.Topic;
+import org.springframework.beans.factory.annotation.Qualifier;
 
 public class Admin{
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(Admin.class);
 
-	BaseConfig config = null;
+	private AdminClient client;
 
-	AdminClient client = null;
+	private BaseConfig config;
 
 	@Autowired
-	public Admin(BaseConfig config) {
+	public Admin(@Qualifier("kafkaConfig") BaseConfig config) {
+		LOGGER.info("Constructing the Producer : {}", config);
 		this.config = config;
-		LOGGER.info("Constructing the Producer : {}", this.config);
-
 		Properties props = new Properties();
-		props.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, this.config.getBootstrapServers());
-		props.put(AdminClientConfig.CLIENT_ID_CONFIG, this.config.getHostName());
+		props.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, config.getBootstrapServers());
+		props.put(AdminClientConfig.CLIENT_ID_CONFIG, config.getHostName());
 
 		this.client = KafkaAdminClient.create(props);
 	}
 
-	public List<Topic> getAvailableTopics() throws InterruptedException, ExecutionException, UnknownHostException {
+	public List<Topic> getAvailableTopics() throws InterruptedException, ExecutionException {
 		LOGGER.info("Getting available topics");
 		ListTopicsResult lst = client.listTopics();
-		List<Topic> outLst = new ArrayList<Topic>();
+		List<Topic> outLst = new ArrayList<>();
 		lst.names().get().forEach((v) -> outLst.add(new Topic(v)));
 		return outLst;
 	}
 
 	public List<Topic> deleteTopics(List<String> topicNameLst)
-			throws UnknownHostException, InterruptedException, ExecutionException {
+			throws InterruptedException, ExecutionException {
 		LOGGER.info("Deleting specifed topics : {}", topicNameLst);
 		client.deleteTopics(topicNameLst);
 		ListTopicsResult lst = client.listTopics();
-		List<Topic> outLst = new ArrayList<Topic>();
+		List<Topic> outLst = new ArrayList<>();
 		lst.names().get().forEach((v) -> outLst.add(new Topic(v)));
 		return outLst;
 	}
 
 	public List<Topic> createTopics(List<String> topicNameLst)
-			throws UnknownHostException, InterruptedException, ExecutionException {
+			throws InterruptedException, ExecutionException {
 		LOGGER.info("Creating specifed topics : {}", topicNameLst);
 		ListTopicsResult lst = client.listTopics();
 		Set<String> existingTopics = lst.names().get();
 
-		List<String> delLst = new ArrayList<String>();
-		delLst.addAll(topicNameLst);
+		List<String> delLst = new ArrayList<>(topicNameLst);
 
 		existingTopics.forEach((t) -> {
 			LOGGER.info("{}, {}", t, delLst);
@@ -74,16 +72,15 @@ public class Admin{
 
 		client.deleteTopics(delLst);
 
-		List<NewTopic> newTopics = new ArrayList<NewTopic>();
+		List<NewTopic> newTopics = new ArrayList<>();
 		for (String topicName : topicNameLst) {
 			newTopics.add(new NewTopic(topicName, config.getPartitionCount(), config.getReplicationFactor()));
 		}
-		;
 
 		client.createTopics(newTopics);
 
 		lst = client.listTopics();
-		List<Topic> outLst = new ArrayList<Topic>();
+		List<Topic> outLst = new ArrayList<>();
 		lst.names().get().forEach((v) -> outLst.add(new Topic(v)));
 		return outLst;
 	}

@@ -1,5 +1,6 @@
 package com.bullhorn.service;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -22,6 +23,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import com.bullhorn.config.BaseConfig;
 import com.bullhorn.data.QData;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Qualifier;
 
 public class Consumer implements Runnable {
 	private static final Logger LOGGER = LoggerFactory.getLogger(Consumer.class);
@@ -30,26 +33,24 @@ public class Consumer implements Runnable {
 	public volatile List<QData> consumedData = new ArrayList<QData>();
 	public final String SEP = "|";
 
-	KafkaConsumer<Long, String> consumer = null;
-
-	BaseConfig config = null;
+	private final KafkaConsumer<Long, String> consumer;
 
 	@Autowired
-	public Consumer(BaseConfig config) {
-		this.config=config;
-		LOGGER.info("Constructing the Consumer : {}", this.config);
+	public Consumer(@Qualifier("kafkaConfig")BaseConfig config) {
+		//this.config = config;
+		LOGGER.info("Constructing the Consumer : {}", config);
 
 		Properties props = new Properties();
-		props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, this.config.getBootstrapServers());
-		props.put(ConsumerConfig.CLIENT_ID_CONFIG, this.config.getHostName());
+		props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, config.getBootstrapServers());
+		props.put(ConsumerConfig.CLIENT_ID_CONFIG, config.getHostName());
 		props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, LongDeserializer.class.getName());
 		props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
 		props.put(ConsumerConfig.RETRY_BACKOFF_MS_CONFIG, 10000);
-		props.put(ConsumerConfig.GROUP_ID_CONFIG, this.config.getGroupId());
+		props.put(ConsumerConfig.GROUP_ID_CONFIG, config.getGroupId());
 		props.put(ConsumerConfig.HEARTBEAT_INTERVAL_MS_CONFIG, 5000);
 		props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, false);
 
-		this.consumer = new KafkaConsumer<Long, String>(props);
+		this.consumer = new KafkaConsumer<>(props);
 	}
 	
 	public synchronized List<QData> recieveData(String topicName) {
@@ -88,7 +89,7 @@ public class Consumer implements Runnable {
 					for (ConsumerRecord<Long, String> record : records) {
 						LOGGER.info("topic = {} offset = {}, key = {}, value ={}\n", record.topic(),record.offset(), record.key(), record.value());
 						//lst.add(record.value());
-						consumedData.add(new QData(record.topic(), record.value()));
+						consumedData.add(new QData(record.topic(), new ObjectMapper().readTree(record.value())));
 					}
 					
 					for (TopicPartition tp : consumer.assignment())
@@ -105,6 +106,8 @@ public class Consumer implements Runnable {
 					} catch (InterruptedException e1) {
 						LOGGER.warn("Consumer closing - caught exception: " + e1);
 					}
+				} catch (IOException e) {
+					e.printStackTrace();
 				}
 			}
 

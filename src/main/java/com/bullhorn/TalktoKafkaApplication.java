@@ -2,7 +2,6 @@ package com.bullhorn;
 
 import java.lang.Thread.UncaughtExceptionHandler;
 
-import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
 import org.slf4j.Logger;
@@ -15,6 +14,8 @@ import org.springframework.boot.web.servlet.support.SpringBootServletInitializer
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.PropertySource;
+import org.springframework.context.event.ContextRefreshedEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.core.env.Environment;
 import org.springframework.hateoas.config.EnableHypermediaSupport;
 import org.springframework.hateoas.config.EnableHypermediaSupport.HypermediaType;
@@ -32,8 +33,12 @@ public class TalktoKafkaApplication extends SpringBootServletInitializer{
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(TalktoKafkaApplication.class);
 
-	@Autowired
-	private Environment env;
+	private final Environment env;
+
+    @Autowired
+    public TalktoKafkaApplication(Environment env) {
+        this.env = env;
+    }
 
     @Override
     protected SpringApplicationBuilder configure(SpringApplicationBuilder application) {
@@ -44,49 +49,52 @@ public class TalktoKafkaApplication extends SpringBootServletInitializer{
 		SpringApplication.run(TalktoKafkaApplication.class, args);
 	}
 
-	@Autowired
-	BaseConfig config;
-
 	@Bean(name = "kafkaConfig")
-	public BaseConfig configInit() {
-		config = new BaseConfig(env.getProperty("kafka.bootstrapServers"), env.getProperty("kafka.partitionCount"),
+    public BaseConfig configInit() {
+        BaseConfig config = new BaseConfig(env.getProperty("kafka.bootstrapServers"), env.getProperty("kafka.partitionCount"),
 				env.getProperty("kafka.replicationFactor"), env.getProperty("kafka.groupId"),
 				env.getProperty("kafka.srcTopicName"), env.getProperty("kafka.destTopicName"),
 				env.getProperty("kafka.consumerTimeOut"));
 
 		config.setInitVector(env.getProperty("kafka.initVector"));
 		config.setSecurityKey(env.getProperty("kafka.securityKey"));
+		LOGGER.debug("{}",config.toString());
 		return config;
 	}
 
-	@Bean
+	@Bean(name = "consumer")
 	@DependsOn("kafkaConfig")
 	public Consumer consumerInit() {
-		return new Consumer(config);
+        LOGGER.debug("****** Consumer Constructed");
+        return new Consumer(configInit());
 	}
 
-	@Bean
-	@DependsOn("kafkaConfig")
+	@Bean(name = "producer")
+	@DependsOn("consumer")
 	public Producer producerInit() {
-		return new Producer(config);
+        LOGGER.debug("****** Producer Constructed");
+        return new Producer(configInit());
 	}
 
-	@Bean
-	@DependsOn("kafkaConfig")
+	@Bean(name = "admin")
+	@DependsOn("producer")
 	public Admin adminClientInit() {
-		return new Admin(config);
+        LOGGER.debug("****** Admin Constructed");
+        return new Admin(configInit());
 	}
 
-	@Autowired
-	ConsumerAsyncService consumerAsycSvc;
 
-	@Autowired
-	Consumer consumer;
+    @Bean(name = "consumer-async-svc")
+    @DependsOn("admin")
+    public ConsumerAsyncService consumerAsycSvcInit() {
+        LOGGER.debug("****** ConsumerAsyncService Constructed");
+        return new ConsumerAsyncService(consumerInit());
+    }
 
-	@PostConstruct
-	public void init() {
+	@EventListener
+	public void init(ContextRefreshedEvent event) {
 		LOGGER.info("Startng Consumer Thread");
-		consumerAsycSvc.executeAsynchronously();
+        consumerAsycSvcInit().executeAsynchronously();
 	}
 
 	@PreDestroy
@@ -95,7 +103,8 @@ public class TalktoKafkaApplication extends SpringBootServletInitializer{
 	}
 
 	public void addKafkaConsumerShutdownHook() {
-		consumer.closing = true;
+        Consumer consumer = consumerInit();
+        consumer.closing = true;
 		Runtime.getRuntime().addShutdownHook(new Thread() {
 			@Override
 			public void run() {

@@ -1,6 +1,5 @@
 package com.bullhorn.service;
 
-import java.net.UnknownHostException;
 import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 
@@ -10,41 +9,39 @@ import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.serialization.LongSerializer;
-import org.apache.kafka.common.serialization.StringSerializer;
+import org.apache.kafka.connect.json.JsonSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.bullhorn.config.BaseConfig;
-import com.bullhorn.data.QData;
+import com.fasterxml.jackson.databind.JsonNode;
+import org.springframework.beans.factory.annotation.Qualifier;
 
 public class Producer {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(Producer.class);
-	
-	KafkaProducer<Long, String> producer;
 
-	BaseConfig config = null;
-	
+    private KafkaProducer<Long, JsonNode> producer;
+
 	@Autowired
-	public Producer(BaseConfig config) {
-		this.config=config;
-		LOGGER.info("Constructing the Producer : {}", this.config);
+	public Producer(@Qualifier("kafkaConfig")BaseConfig config) {
+		LOGGER.info("Constructing the Producer : {}", config);
 		
 		Properties props = new Properties();
-		props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, this.config.getBootstrapServers());
-		props.put(ProducerConfig.CLIENT_ID_CONFIG, this.config.getHostName());
+		props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, config.getBootstrapServers());
+		props.put(ProducerConfig.CLIENT_ID_CONFIG, config.getHostName());
 		props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, LongSerializer.class.getName());
-		props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
+		props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class.getName());
 
-		producer = new KafkaProducer<Long, String>(props);
+		producer = new KafkaProducer<>(props);
 	}
 
-	public QData sendData(QData data)
-			throws InterruptedException, ExecutionException, UnknownHostException {
+	public String sendData(String topicName, JsonNode data)
+			throws InterruptedException, ExecutionException {
 		long time = System.currentTimeMillis();
 		
-		final ProducerRecord<Long, String> record = new ProducerRecord<>(data.getTopicName(), time, data.getData());
+		final ProducerRecord<Long, JsonNode> record = new ProducerRecord<>(topicName, time, data);
 		RecordMetadata metadata = producer.send(record, new Callback() {
 
 			@Override
@@ -57,8 +54,7 @@ public class Producer {
 			}
 		}).get();
 
-		data.setData( "[" + metadata.partition() + metadata.offset() + "]" + data.getData());
-		return data;
+		return "[" + metadata.partition() + metadata.offset() + "]" + data.toString();
 	}
 
 }

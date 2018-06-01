@@ -1,9 +1,11 @@
 package com.bullhorn.data;
 
+import com.fasterxml.jackson.databind.JsonNode;
+
 public class QData {
 
-	String topicName;
-	String data;
+    private String topicName;
+    private JsonNode data;
 
 	public String getTopicName() {
 		return topicName;
@@ -13,15 +15,15 @@ public class QData {
 		this.topicName = topicName;
 	}
 
-	public String getData() {
+	public JsonNode getData() {
 		return data;
 	}
 
-	public void setData(String data) {
+	public void setData(JsonNode data) {
 		this.data = data;
 	}
 
-	public QData(String topicName, String data) {
+	public QData(String topicName, JsonNode data) {
 		super();
 		this.topicName = topicName;
 		this.data = data;

@@ -2,15 +2,17 @@ package com.bullhorn.rest;
 
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
 
-import java.net.UnknownHostException;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 import javax.ws.rs.core.MediaType;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.hateoas.Link;
 import org.springframework.hateoas.Links;
 import org.springframework.hateoas.Resource;
@@ -32,6 +34,8 @@ import com.bullhorn.data.Topic;
 import com.bullhorn.service.Admin;
 import com.bullhorn.service.Consumer;
 import com.bullhorn.service.Producer;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.swagger.annotations.Api;
 
@@ -41,25 +45,27 @@ import io.swagger.annotations.Api;
 public class KafkaTalker extends ResourceSupport {
 
 	@Autowired
+	@Qualifier("admin")
 	Admin client;
 
 	@Autowired
+	@Qualifier("consumer")
 	Consumer consumer;
 
 	@Autowired
+	@Qualifier("producer")
 	Producer producer;
 
 	@RequestMapping(method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON)
 	@ResponseBody
 	@GetMapping
 	public List<Topic> listTopics() {
-		List<Topic> topicList = new ArrayList<Topic>();
 		try {
-			return topicList = client.getAvailableTopics();
-		} catch (UnknownHostException | InterruptedException | ExecutionException e) {
+			return client.getAvailableTopics();
+		} catch (InterruptedException | ExecutionException e) {
 			e.printStackTrace();
 		}
-		return topicList;
+		return null;
 	}
 	
 	@RequestMapping(value="/hateoas",method = RequestMethod.GET, produces = "application/hal+json")
@@ -72,7 +78,7 @@ public class KafkaTalker extends ResourceSupport {
 
 		try {
 			topicList = client.getAvailableTopics();
-		} catch (UnknownHostException | InterruptedException | ExecutionException e) {
+		} catch (InterruptedException | ExecutionException e) {
 			e.printStackTrace();
 		}
 
@@ -104,7 +110,7 @@ public class KafkaTalker extends ResourceSupport {
 		return new ResponseEntity<>(outLst, HttpStatus.OK);
 	}
 
-	@RequestMapping(method = RequestMethod.PUT)
+	@RequestMapping(method = RequestMethod.POST)
 	public ResponseEntity<List<Topic>> createTopics(@RequestParam(value = "names") String names) {
 		List<Topic> outLst = null;
 		try {
@@ -119,28 +125,28 @@ public class KafkaTalker extends ResourceSupport {
 
 	@RequestMapping(value = "/{topic}/publish", method = RequestMethod.POST, consumes = "application/json")
 	@ResponseBody
-	public QData publish(@PathVariable String topic, @RequestBody QData data) {
+	public String publish(@PathVariable String topic, @RequestBody JsonNode data) {
 		try {
-			return producer.sendData(data);
+			return producer.sendData(topic,data);
 		} catch (Exception e) {
-			return new QData("Error", e.getMessage());
+			return e.getMessage();
 		}
 	}
 
 	@RequestMapping(value = "/{topic}/consume", method = RequestMethod.GET)
 	@ResponseBody
-	public List<QData> consume(@PathVariable String topic) {
+	public List<QData> consume(@PathVariable String topic) throws IOException {
 		try {
 			return consumer.recieveData(topic);
 		} catch (Exception e) {
-			return Arrays.asList(new QData("Error", e.getMessage()));
+			return Collections.singletonList(new QData("Error", new ObjectMapper().readTree(e.getMessage())));
 		}
 	}
 
 	@RequestMapping(value = "test", method = RequestMethod.GET)
 	@ResponseBody
-	public QData checkService() {
-		return new QData("Test", "KafkaTalker is running");
+	public String checkService() {
+			return "KafkaTalker is running";
 	}
 
 }

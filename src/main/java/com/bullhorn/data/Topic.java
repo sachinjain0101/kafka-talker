@@ -8,7 +8,7 @@ import com.fasterxml.jackson.annotation.JsonRootName;
 @JsonRootName("topic")
 public class Topic{
 	@JsonProperty("topicName")
-	String topic;
+	private String topic;
 
 	public Topic(String topic) {
 		this.topic = topic;
