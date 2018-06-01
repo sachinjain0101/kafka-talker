@@ -33,12 +33,8 @@ public class TalktoKafkaApplication extends SpringBootServletInitializer{
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(TalktoKafkaApplication.class);
 
-	private final Environment env;
-
-    @Autowired
-    public TalktoKafkaApplication(Environment env) {
-        this.env = env;
-    }
+	@Autowired
+	private Environment env;
 
     @Override
     protected SpringApplicationBuilder configure(SpringApplicationBuilder application) {
