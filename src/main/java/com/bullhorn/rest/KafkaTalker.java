@@ -44,17 +44,18 @@ import io.swagger.annotations.Api;
 @RequestMapping("/topics")
 public class KafkaTalker extends ResourceSupport {
 
-	@Autowired
-	@Qualifier("admin")
-	Admin client;
+    final Admin client;
+
+    final Consumer consumer;
+
+    final Producer producer;
 
 	@Autowired
-	@Qualifier("consumer")
-	Consumer consumer;
-
-	@Autowired
-	@Qualifier("producer")
-	Producer producer;
+    public KafkaTalker(@Qualifier("admin") Admin client, @Qualifier("consumer") Consumer consumer, @Qualifier("producer") Producer producer) {
+        this.client = client;
+        this.consumer = consumer;
+        this.producer = producer;
+    }
 
 	@RequestMapping(method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON)
 	@ResponseBody
