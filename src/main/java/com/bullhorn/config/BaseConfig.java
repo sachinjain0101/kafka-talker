@@ -13,8 +13,7 @@ public class BaseConfig {
 	private short replicationFactor;
 	private String hostName = "NA";
 	private String groupId;
-	private String srcTopicName;
-	private String destTopicName;
+    private String topics;
 	private String securityKey;
 	private String initVector;
 	private int consumerTimeOut;
@@ -55,20 +54,12 @@ public class BaseConfig {
 		this.groupId = groupId;
 	}
 
-	public String getSrcTopicName() {
-		return srcTopicName;
-	}
+    public String getTopics() {
+        return this.topics;
+    }
 
-	public void setSrcTopicName(String srcTopicName) {
-		this.srcTopicName = srcTopicName;
-	}
-
-	public String getDestTopicName() {
-		return destTopicName;
-	}
-
-	public void setDestTopicName(String destTopicName) {
-		this.destTopicName = destTopicName;
+    public void setTopics(String topics) {
+        this.topics = topics;
 	}
 
 	public String getSecurityKey() {
@@ -95,26 +86,23 @@ public class BaseConfig {
 		this.consumerTimeOut = consumerTimeOut;
 	}
 
-	public BaseConfig(String bootstrapServers, String partitionCount, String replicationFactor, String srcTopicName,
-			String destTopicName) {
+    public BaseConfig(String bootstrapServers, String partitionCount, String replicationFactor, String topics) {
 		super();
 		this.bootstrapServers = bootstrapServers;
 		this.partitionCount = Integer.parseInt(partitionCount);
 		this.replicationFactor = Short.parseShort(replicationFactor);
-		this.srcTopicName = srcTopicName;
-		this.destTopicName = destTopicName;
+        this.topics = topics;
 		setHostName();
 	}
 
 	public BaseConfig(String bootstrapServers, String partitionCount, String replicationFactor, String groupId,
-			String srcTopicName, String destTopicName) {
+                      String topics) {
 		super();
 		this.bootstrapServers = bootstrapServers;
 		this.partitionCount = Integer.parseInt(partitionCount);
 		this.replicationFactor = Short.parseShort(replicationFactor);
 		this.groupId = groupId;
-		this.srcTopicName = srcTopicName;
-		this.destTopicName = destTopicName;
+        this.topics = topics;
 		setHostName();
 	}
 
@@ -127,14 +115,13 @@ public class BaseConfig {
 	}
 
 	public BaseConfig(String bootstrapServers, String partitionCount, String replicationFactor, String groupId,
-			String srcTopicName, String destTopicName, String consumerTimeOut) {
+                      String topics, String consumerTimeOut) {
 		super();
 		this.bootstrapServers = bootstrapServers;
 		this.partitionCount = Integer.parseInt(partitionCount);
 		this.replicationFactor = Short.parseShort(replicationFactor);
 		this.groupId = groupId;
-		this.srcTopicName = srcTopicName;
-		this.destTopicName = destTopicName;
+        this.topics = topics;
 		this.consumerTimeOut = Integer.parseInt(consumerTimeOut);
 		setHostName();
 	}

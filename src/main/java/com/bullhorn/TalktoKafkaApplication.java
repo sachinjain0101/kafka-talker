@@ -49,8 +49,7 @@ public class TalktoKafkaApplication extends SpringBootServletInitializer{
     public BaseConfig configInit() {
         BaseConfig config = new BaseConfig(env.getProperty("kafka.bootstrapServers"), env.getProperty("kafka.partitionCount"),
 				env.getProperty("kafka.replicationFactor"), env.getProperty("kafka.groupId"),
-				env.getProperty("kafka.srcTopicName"), env.getProperty("kafka.destTopicName"),
-				env.getProperty("kafka.consumerTimeOut"));
+				env.getProperty("kafka.topics"), env.getProperty("kafka.consumerTimeOut"));
 
 		config.setInitVector(env.getProperty("kafka.initVector"));
 		config.setSecurityKey(env.getProperty("kafka.securityKey"));

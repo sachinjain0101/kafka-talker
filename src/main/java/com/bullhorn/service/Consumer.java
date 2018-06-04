@@ -1,10 +1,7 @@
 package com.bullhorn.service;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Properties;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -35,18 +32,20 @@ public class Consumer implements Runnable {
 
 	private final KafkaConsumer<Long, String> consumer;
 
+	private BaseConfig config;
+
 	@Autowired
 	public Consumer(@Qualifier("kafkaConfig")BaseConfig config) {
-		//this.config = config;
+		this.config = config;
 		LOGGER.info("Constructing the Consumer : {}", config);
 
 		Properties props = new Properties();
-		props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, config.getBootstrapServers());
-		props.put(ConsumerConfig.CLIENT_ID_CONFIG, config.getHostName());
+		props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, this.config.getBootstrapServers());
+		props.put(ConsumerConfig.CLIENT_ID_CONFIG, this.config.getHostName());
 		props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, LongDeserializer.class.getName());
 		props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
 		props.put(ConsumerConfig.RETRY_BACKOFF_MS_CONFIG, 10000);
-		props.put(ConsumerConfig.GROUP_ID_CONFIG, config.getGroupId());
+		props.put(ConsumerConfig.GROUP_ID_CONFIG, this.config.getGroupId());
 		props.put(ConsumerConfig.HEARTBEAT_INTERVAL_MS_CONFIG, 5000);
 		props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, false);
 
@@ -77,7 +76,7 @@ public class Consumer implements Runnable {
 
 		try {
 			synchronized (consumer) {
-	            this.consumer.subscribe(Collections.singletonList("recalcs"));
+				this.consumer.subscribe(Arrays.asList(this.config.getTopics().split(",")));
 	        }
 
 			while (!closing) {
